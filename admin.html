@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员 - 饮料选择记录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stats {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .email-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .email-section h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .email-section p {
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        .email-content {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 饮料选择记录管理</h1>
+
+        <div class="email-section">
+            <h3>⚠️ 关于邮件发送</h3>
+            <p>由于纯前端页面无法直接发送邮件，请使用以下方式：</p>
+            <p>1. 点击"复制邮件内容"按钮</p>
+            <p>2. 手动发送邮件到 bamboolin808@gmail.com</p>
+            <p>3. 或者使用下方的"导出 CSV"功能</p>
+        </div>
+
+        <div class="stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">总选择数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="uniqueUsers">0</div>
+                    <div class="stat-label">参与人数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="lastUpdate">--</div>
+                    <div class="stat-label">最后更新</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="refreshData()">🔄 刷新数据</button>
+            <button class="btn btn-success" onclick="exportCSV()">📥 导出 CSV</button>
+            <button class="btn btn-success" onclick="copyEmailContent()">📧 复制邮件内容</button>
+            <button class="btn btn-danger" onclick="clearData()">🗑️ 清空数据</button>
+        </div>
+
+        <div id="tableContainer"></div>
+
+        <div class="back-link">
+            <a href="index.html">← 返回选择页面</a>
+        </div>
+    </div>
+
+    <script>
+        function loadData() {
+            const selections = JSON.parse(localStorage.getItem('drinkSelections') || '[]');
+            
+            // 更新统计
+            document.getElementById('totalCount').textContent = selections.length;
+            
+            const uniqueUsers = new Set(selections.map(s => s.name)).size;
+            document.getElementById('uniqueUsers').textContent = uniqueUsers;
+            
+            if (selections.length > 0) {
+                const lastTime = new Date(selections[selections.length - 1].timestamp);
+                document.getElementById('lastUpdate').textContent = lastTime.toLocaleTimeString('zh-CN');
+            }
+
+            // 渲染表格
+            const container = document.getElementById('tableContainer');
+            
+            if (selections.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>暂无选择记录</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>姓名</th>
+                            <th>饮料</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            selections.forEach((selection, index) => {
+                const time = new Date(selection.timestamp).toLocaleString('zh-CN');
+                tableHTML += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${selection.name}</td>
+                        <td>${selection.drink}</td>
+                        <td>${time}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = tableHTML;
+        }
+
+        function refreshData() {
+            loadData();
+        }
+
+        function exportCSV() {
+            const selections = JSON.parse(localStorage.getItem('drinkSelections') || '[]');
+            
+            if (selections.length === 0) {
+                alert('暂无数据可导出');
+                return;
+            }
+
+            let csv = '姓名,饮料,时间\n';
+            selections.forEach(selection => {
+                const time = new Date(selection.timestamp).toLocaleString('zh-CN');
+                csv += `${selection.name},${selection.drink},${time}\n`;
+            });
+
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `饮料选择记录_${new Date().toLocaleDateString('zh-CN')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function copyEmailContent() {
+            const selections = JSON.parse(localStorage.getItem('drinkSelections') || '[]');
+            
+            if (selections.length === 0) {
+                alert('暂无数据');
+                return;
+            }
+
+            let emailContent = '团队饮料选择汇总\n\n';
+            emailContent += `统计时间：${new Date().toLocaleString('zh-CN')}\n`;
+            emailContent += `总选择数：${selections.length}\n`;
+            emailContent += `参与人数：${new Set(selections.map(s => s.name)).size}\n\n`;
+            emailContent += '详细列表：\n';
+            emailContent += '----------------------------------------\n';
+            
+            selections.forEach((selection, index) => {
+                const time = new Date(selection.timestamp).toLocaleString('zh-CN');
+                emailContent += `${index + 1}. ${selection.name} - ${selection.drink} (${time})\n`;
+            });
+
+            navigator.clipboard.writeText(emailContent).then(() => {
+                alert('邮件内容已复制到剪贴板！\n请粘贴到邮件客户端发送至 bamboolin808@gmail.com');
+            }).catch(() => {
+                alert('复制失败，请手动复制以下内容：\n\n' + emailContent);
+            });
+        }
+
+        function clearData() {
+            if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                localStorage.removeItem('drinkSelections');
+                loadData();
+                alert('数据已清空');
+            }
+        }
+
+        // 页面加载时加载数据
+        loadData();
+
+        // 每30秒自动刷新
+        setInterval(loadData, 30000);
+    </script>
+</body>
+</html>
